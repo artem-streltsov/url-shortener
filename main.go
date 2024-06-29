@@ -1,18 +1,27 @@
 package main
 
 import (
-    "database/sql"
-    "fmt"
-    "net/http"
-    "log"
+	"crypto/sha256"
+	"database/sql"
+	"fmt"
+	"log"
+	"net/http"
+    "encoding/json"
 
-    _ "modernc.org/sqlite"
+	_ "modernc.org/sqlite"
 )
 
 var DB *sql.DB
+const base62Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+type URL struct {
+    URL string `json:"url"`
+    Key string `json:"key"`
+}
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
-    rows, err := DB.Query("SELECT url, key FROM urls")
+    sql := "SELECT url, key FROM urls"
+    rows, err := DB.Query(sql)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -39,6 +48,57 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, response)
 }
 
+func encodeBytesToBase62(input []byte) string {
+    result := make([]byte, 0, 10)
+    for _, b := range input {
+        result = append(result, base62Chars[b%62])
+    }
+    return string(result)
+}
+
+func generateKey(url string) string {
+    hash := sha256.Sum256([]byte(url))
+    key := encodeBytesToBase62(hash[:])
+    return key
+}
+
+// returns number of affected rows and error
+func insertRow(url string, key string) (int, error) {
+    sql := "INSERT INTO urls (url, key) VALUES (?, ?)"
+    result, err := DB.Exec(sql, url, key)
+    if err != nil {
+        return 0, err
+    }
+
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return 0, err
+    }
+
+    return int(rowsAffected), nil
+}
+
+func newURL(w http.ResponseWriter, r *http.Request) {
+    var newURL URL
+    decoder := json.NewDecoder(r.Body)
+    if err := decoder.Decode(&newURL); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    newURL.Key = generateKey(newURL.URL)
+    rowsAffected, err := insertRow(newURL.URL, newURL.Key)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    fmt.Println("Inserted", newURL, rowsAffected, "rows affected")
+
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(newURL)
+}
+
 func main() {
     var err error
     DB, err = sql.Open("sqlite", "database/database.sqlite3")
@@ -48,6 +108,7 @@ func main() {
     defer DB.Close()
 
     http.HandleFunc("/", defaultHandler)
+    http.HandleFunc("/new", newURL)
 
     fmt.Println("Starting server at :8080")
     if err := http.ListenAndServe(":8080", nil); err != nil {
