@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
     "encoding/json"
+    "strings"
 
 	_ "modernc.org/sqlite"
 )
@@ -99,6 +100,24 @@ func newURL(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(newURL)
 }
 
+func redirect(w http.ResponseWriter, r *http.Request) {
+    key := strings.TrimPrefix(r.URL.Path, "/r/")
+    if key == "" {
+		http.Error(w, "Key is required", http.StatusBadRequest)
+		return
+	}
+
+    sql := "SELECT url FROM urls WHERE key = ?"
+	var url string
+	err := DB.QueryRow(sql, key).Scan(&url)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+    http.Redirect(w, r, url, http.StatusFound)
+}
+
 func main() {
     var err error
     DB, err = sql.Open("sqlite", "database/database.sqlite3")
@@ -109,6 +128,7 @@ func main() {
 
     http.HandleFunc("/", defaultHandler)
     http.HandleFunc("/new", newURL)
+    http.HandleFunc("/r/", redirect)
 
     fmt.Println("Starting server at :8080")
     if err := http.ListenAndServe(":8080", nil); err != nil {
