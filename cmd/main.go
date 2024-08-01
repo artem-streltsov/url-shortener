@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/gob"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +15,11 @@ import (
 	"github.com/artemstreltsov/url-shortener/internal/handlers"
 	"github.com/artemstreltsov/url-shortener/internal/safebrowsing"
 )
+
+func init() {
+	// Register the database.User type with gob
+	gob.Register(&database.User{})
+}
 
 func main() {
 	if err := godotenv.Load(); err != nil {

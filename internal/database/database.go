@@ -3,12 +3,29 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
 
 type DB struct {
 	*sql.DB
+}
+
+type User struct {
+	ID       int64
+	Username string
+	Email    string
+	Password string
+}
+
+type URL struct {
+	ID        int64
+	UserID    int64
+	URL       string
+	Key       string
+	CreatedAt time.Time
+	Clicks    int
 }
 
 func NewDB(dbPath string) (*DB, error) {
@@ -21,17 +38,77 @@ func NewDB(dbPath string) (*DB, error) {
 		return nil, fmt.Errorf("error connecting to database: %w", err)
 	}
 
+	if err := initSchema(db); err != nil {
+		return nil, fmt.Errorf("error initializing schema: %w", err)
+	}
+
 	return &DB{db}, nil
 }
 
-func (db *DB) InsertURL(url, key string) error {
-	stmt, err := db.Prepare("INSERT INTO urls (url, key) VALUES (?, ?)")
+func initSchema(db *sql.DB) error {
+	schema := `
+	CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT UNIQUE NOT NULL,
+		email TEXT UNIQUE NOT NULL,
+		password TEXT NOT NULL
+	);
+
+	CREATE TABLE IF NOT EXISTS urls (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		url TEXT NOT NULL,
+		key TEXT UNIQUE NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		clicks INTEGER DEFAULT 0,
+		FOREIGN KEY (user_id) REFERENCES users(id)
+	);
+	`
+
+	_, err := db.Exec(schema)
+	return err
+}
+
+func (db *DB) CreateUser(username, email, password string) (*User, error) {
+	stmt, err := db.Prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)")
+	if err != nil {
+		return nil, fmt.Errorf("error preparing statement: %w", err)
+	}
+	defer stmt.Close()
+
+	result, err := stmt.Exec(username, email, password)
+	if err != nil {
+		return nil, fmt.Errorf("error inserting user: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("error getting last insert ID: %w", err)
+	}
+
+	return &User{ID: id, Username: username, Email: email, Password: password}, nil
+}
+
+func (db *DB) GetUserByUsername(username string) (*User, error) {
+	var user User
+	err := db.QueryRow("SELECT id, username, email, password FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("error querying user: %w", err)
+	}
+	return &user, nil
+}
+
+func (db *DB) InsertURL(url, key string, userID int64) error {
+	stmt, err := db.Prepare("INSERT INTO urls (url, key, user_id) VALUES (?, ?, ?)")
 	if err != nil {
 		return fmt.Errorf("error preparing statement: %w", err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(url, key)
+	_, err = stmt.Exec(url, key, userID)
 	if err != nil {
 		return fmt.Errorf("error inserting URL: %w", err)
 	}
@@ -39,32 +116,32 @@ func (db *DB) InsertURL(url, key string) error {
 	return nil
 }
 
-func (db *DB) GetURL(key string) (string, error) {
-	var url string
-	err := db.QueryRow("SELECT url FROM urls WHERE key = ?", key).Scan(&url)
+func (db *DB) GetURL(key string) (*URL, error) {
+	var url URL
+	err := db.QueryRow("SELECT id, user_id, url, key, created_at, clicks FROM urls WHERE key = ?", key).Scan(&url.ID, &url.UserID, &url.URL, &url.Key, &url.CreatedAt, &url.Clicks)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "", fmt.Errorf("no URL found for key: %s", key)
+			return nil, fmt.Errorf("no URL found for key: %s", key)
 		}
-		return "", fmt.Errorf("error querying URL: %w", err)
+		return nil, fmt.Errorf("error querying URL: %w", err)
 	}
-	return url, nil
+	return &url, nil
 }
 
-func (db *DB) GetAllURLs() ([]struct{ URL, Key string }, error) {
-	rows, err := db.Query("SELECT url, key FROM urls")
+func (db *DB) GetURLsByUserID(userID int64) ([]URL, error) {
+	rows, err := db.Query("SELECT id, user_id, url, key, created_at, clicks FROM urls WHERE user_id = ?", userID)
 	if err != nil {
 		return nil, fmt.Errorf("error querying URLs: %w", err)
 	}
 	defer rows.Close()
 
-	var urls []struct{ URL, Key string }
+	var urls []URL
 	for rows.Next() {
-		var url, key string
-		if err := rows.Scan(&url, &key); err != nil {
+		var url URL
+		if err := rows.Scan(&url.ID, &url.UserID, &url.URL, &url.Key, &url.CreatedAt, &url.Clicks); err != nil {
 			return nil, fmt.Errorf("error scanning row: %w", err)
 		}
-		urls = append(urls, struct{ URL, Key string }{url, key})
+		urls = append(urls, url)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -72,4 +149,12 @@ func (db *DB) GetAllURLs() ([]struct{ URL, Key string }, error) {
 	}
 
 	return urls, nil
+}
+
+func (db *DB) IncrementClicks(urlID int64) error {
+	_, err := db.Exec("UPDATE urls SET clicks = clicks + 1 WHERE id = ?", urlID)
+	if err != nil {
+		return fmt.Errorf("error incrementing clicks: %w", err)
+	}
+	return nil
 }

@@ -4,14 +4,17 @@ go 1.20
 
 require (
 	github.com/google/safebrowsing v0.0.0-20190624211811-bbf0d20d26b3
+	github.com/gorilla/sessions v1.2.1
 	github.com/joho/godotenv v1.5.1
-	modernc.org/sqlite v1.23.1
+	golang.org/x/crypto v0.9.0
+	modernc.org/sqlite v1.22.1
 )
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/golang/protobuf v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
