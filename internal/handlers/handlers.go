@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -24,7 +27,19 @@ type Handler struct {
 func NewHandler(db *database.DB) *Handler {
 	templatesDir := "./internal/templates"
 	templates := template.Must(template.ParseGlob(filepath.Join(templatesDir, "*.html")))
-	store := sessions.NewCookieStore([]byte("secret-key")) // Replace with a secure key in production
+
+	secretKey := os.Getenv("SESSION_SECRET_KEY")
+	if secretKey == "" {
+		key := make([]byte, 32)
+		_, err := rand.Read(key)
+		if err != nil {
+			log.Fatalf("Failed to generate random key: %v", err)
+		}
+		secretKey = base64.StdEncoding.EncodeToString(key)
+		log.Println("WARNING: SESSION_SECRET_KEY not set. Using a randomly generated key.")
+	}
+
+	store := sessions.NewCookieStore([]byte(secretKey))
 	return &Handler{db: db, templates: templates, store: store}
 }
 
