@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/artemstreltsov/url-shortener/internal/database"
@@ -36,6 +37,8 @@ func (h *Handler) Routes() http.Handler {
 	mux.HandleFunc("/login", h.loginHandler)
 	mux.HandleFunc("/logout", h.logoutHandler)
 	mux.HandleFunc("/dashboard", h.dashboardHandler)
+	mux.HandleFunc("/edit/", h.editURLHandler)
+	mux.HandleFunc("/delete/", h.deleteURLHandler)
 	return mux
 }
 
@@ -308,4 +311,110 @@ func (h *Handler) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := h.store.Get(r, "session")
+	user, ok := session.Values["user"].(*database.User)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	urlID, err := strconv.ParseInt(strings.TrimPrefix(r.URL.Path, "/edit/"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid URL ID", http.StatusBadRequest)
+		return
+	}
+
+	url, err := h.db.GetURLByID(urlID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	if url.UserID != user.ID {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		data := struct {
+			URL *database.URL
+		}{
+			URL: url,
+		}
+		err := h.templates.ExecuteTemplate(w, "edit.html", data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	case http.MethodPost:
+		newURL := r.FormValue("url")
+		if newURL == "" {
+			http.Error(w, "URL is required", http.StatusBadRequest)
+			return
+		}
+
+		if !utils.IsValidURL(newURL) {
+			http.Error(w, "Invalid URL", http.StatusBadRequest)
+			return
+		}
+
+		isSafe, err := safebrowsing.IsSafeURL(newURL)
+		if err != nil {
+			http.Error(w, "Error checking URL safety", http.StatusInternalServerError)
+			return
+		}
+
+		if !isSafe {
+			http.Error(w, "The provided URL is not safe", http.StatusBadRequest)
+			return
+		}
+
+		err = h.db.UpdateURL(urlID, newURL)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *Handler) deleteURLHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := h.store.Get(r, "session")
+	user, ok := session.Values["user"].(*database.User)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	urlID, err := strconv.ParseInt(strings.TrimPrefix(r.URL.Path, "/delete/"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid URL ID", http.StatusBadRequest)
+		return
+	}
+
+	url, err := h.db.GetURLByID(urlID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	if url.UserID != user.ID {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
+		return
+	}
+
+	err = h.db.DeleteURL(urlID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 }

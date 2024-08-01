@@ -158,3 +158,31 @@ func (db *DB) IncrementClicks(urlID int64) error {
 	}
 	return nil
 }
+
+func (db *DB) UpdateURL(id int64, url string) error {
+	_, err := db.Exec("UPDATE urls SET url = ? WHERE id = ?", url, id)
+	if err != nil {
+		return fmt.Errorf("error updating URL: %w", err)
+	}
+	return nil
+}
+
+func (db *DB) DeleteURL(id int64) error {
+	_, err := db.Exec("DELETE FROM urls WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("error deleting URL: %w", err)
+	}
+	return nil
+}
+
+func (db *DB) GetURLByID(id int64) (*URL, error) {
+	var url URL
+	err := db.QueryRow("SELECT id, user_id, url, key, created_at, clicks FROM urls WHERE id = ?", id).Scan(&url.ID, &url.UserID, &url.URL, &url.Key, &url.CreatedAt, &url.Clicks)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no URL found for id: %d", id)
+		}
+		return nil, fmt.Errorf("error querying URL: %w", err)
+	}
+	return &url, nil
+}
