@@ -316,9 +316,11 @@ func (h *Handler) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		User *database.User
 		URLs []database.URL
+		Host string
 	}{
 		User: user,
 		URLs: urls,
+		Host: r.Host,
 	}
 
 	err = h.templates.ExecuteTemplate(w, "dashboard.html", data)
