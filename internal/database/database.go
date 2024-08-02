@@ -26,6 +26,7 @@ type URL struct {
 	Key       string
 	CreatedAt time.Time
 	Clicks    int
+	Password  string
 }
 
 func NewDB(dbPath string) (*DB, error) {
@@ -61,6 +62,7 @@ func initSchema(db *sql.DB) error {
 		key TEXT UNIQUE NOT NULL,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		clicks INTEGER DEFAULT 0,
+		password TEXT,
 		FOREIGN KEY (user_id) REFERENCES users(id)
 	);
 	`
@@ -101,14 +103,14 @@ func (db *DB) GetUserByUsername(username string) (*User, error) {
 	return &user, nil
 }
 
-func (db *DB) InsertURL(url, key string, userID int64) error {
-	stmt, err := db.Prepare("INSERT INTO urls (url, key, user_id) VALUES (?, ?, ?)")
+func (db *DB) InsertURL(url, key string, userID int64, password string) error {
+	stmt, err := db.Prepare("INSERT INTO urls (url, key, user_id, password) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return fmt.Errorf("error preparing statement: %w", err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(url, key, userID)
+	_, err = stmt.Exec(url, key, userID, password)
 	if err != nil {
 		return fmt.Errorf("error inserting URL: %w", err)
 	}
@@ -118,7 +120,7 @@ func (db *DB) InsertURL(url, key string, userID int64) error {
 
 func (db *DB) GetURL(key string) (*URL, error) {
 	var url URL
-	err := db.QueryRow("SELECT id, user_id, url, key, created_at, clicks FROM urls WHERE key = ?", key).Scan(&url.ID, &url.UserID, &url.URL, &url.Key, &url.CreatedAt, &url.Clicks)
+	err := db.QueryRow("SELECT id, user_id, url, key, created_at, clicks, password FROM urls WHERE key = ?", key).Scan(&url.ID, &url.UserID, &url.URL, &url.Key, &url.CreatedAt, &url.Clicks, &url.Password)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("no URL found for key: %s", key)
@@ -129,7 +131,7 @@ func (db *DB) GetURL(key string) (*URL, error) {
 }
 
 func (db *DB) GetURLsByUserID(userID int64) ([]URL, error) {
-	rows, err := db.Query("SELECT id, user_id, url, key, created_at, clicks FROM urls WHERE user_id = ?", userID)
+	rows, err := db.Query("SELECT id, user_id, url, key, created_at, clicks, password FROM urls WHERE user_id = ?", userID)
 	if err != nil {
 		return nil, fmt.Errorf("error querying URLs: %w", err)
 	}
@@ -138,7 +140,7 @@ func (db *DB) GetURLsByUserID(userID int64) ([]URL, error) {
 	var urls []URL
 	for rows.Next() {
 		var url URL
-		if err := rows.Scan(&url.ID, &url.UserID, &url.URL, &url.Key, &url.CreatedAt, &url.Clicks); err != nil {
+		if err := rows.Scan(&url.ID, &url.UserID, &url.URL, &url.Key, &url.CreatedAt, &url.Clicks, &url.Password); err != nil {
 			return nil, fmt.Errorf("error scanning row: %w", err)
 		}
 		urls = append(urls, url)
@@ -159,8 +161,8 @@ func (db *DB) IncrementClicks(urlID int64) error {
 	return nil
 }
 
-func (db *DB) UpdateURL(id int64, url string) error {
-	_, err := db.Exec("UPDATE urls SET url = ? WHERE id = ?", url, id)
+func (db *DB) UpdateURL(id int64, url string, password string) error {
+	_, err := db.Exec("UPDATE urls SET url = ?, password = ? WHERE id = ?", url, password, id)
 	if err != nil {
 		return fmt.Errorf("error updating URL: %w", err)
 	}
@@ -177,7 +179,7 @@ func (db *DB) DeleteURL(id int64) error {
 
 func (db *DB) GetURLByID(id int64) (*URL, error) {
 	var url URL
-	err := db.QueryRow("SELECT id, user_id, url, key, created_at, clicks FROM urls WHERE id = ?", id).Scan(&url.ID, &url.UserID, &url.URL, &url.Key, &url.CreatedAt, &url.Clicks)
+	err := db.QueryRow("SELECT id, user_id, url, key, created_at, clicks, password FROM urls WHERE id = ?", id).Scan(&url.ID, &url.UserID, &url.URL, &url.Key, &url.CreatedAt, &url.Clicks, &url.Password)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("no URL found for id: %d", id)

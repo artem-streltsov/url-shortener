@@ -111,6 +111,8 @@ func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		url := r.Form.Get("url")
+		password := r.Form.Get("password")
+
 		if url == "" {
 			http.Error(w, "URL is required", http.StatusBadRequest)
 			return
@@ -134,7 +136,17 @@ func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
 
 		key := utils.GenerateKey(url)
 
-		if err := h.db.InsertURL(url, key, user.ID); err != nil {
+		var hashedPassword string
+		if password != "" {
+			hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if err != nil {
+				http.Error(w, "Error hashing password", http.StatusInternalServerError)
+				return
+			}
+			hashedPassword = string(hash)
+		}
+
+		if err := h.db.InsertURL(url, key, user.ID, hashedPassword); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -156,6 +168,26 @@ func (h *Handler) redirectHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
+	}
+
+	if url.Password != "" {
+		switch r.Method {
+		case http.MethodGet:
+			err := h.templates.ExecuteTemplate(w, "password.html", struct{ Key string }{Key: key})
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
+		case http.MethodPost:
+			password := r.FormValue("password")
+			if err := bcrypt.CompareHashAndPassword([]byte(url.Password), []byte(password)); err != nil {
+				http.Error(w, "Invalid password", http.StatusUnauthorized)
+				return
+			}
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
 	}
 
 	isSafe, err := safebrowsing.IsSafeURL(url.URL)
@@ -358,9 +390,11 @@ func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		data := struct {
-			URL *database.URL
+			URL  *database.URL
+			Host string
 		}{
-			URL: url,
+			URL:  url,
+			Host: r.Host,
 		}
 		err := h.templates.ExecuteTemplate(w, "edit.html", data)
 		if err != nil {
@@ -369,6 +403,8 @@ func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	case http.MethodPost:
 		newURL := r.FormValue("url")
+		newPassword := r.FormValue("password")
+
 		if newURL == "" {
 			http.Error(w, "URL is required", http.StatusBadRequest)
 			return
@@ -390,7 +426,17 @@ func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = h.db.UpdateURL(urlID, newURL)
+		var hashedPassword string
+		if newPassword != "" {
+			hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+			if err != nil {
+				http.Error(w, "Error hashing password", http.StatusInternalServerError)
+				return
+			}
+			hashedPassword = string(hash)
+		}
+
+		err = h.db.UpdateURL(urlID, newURL, hashedPassword)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
