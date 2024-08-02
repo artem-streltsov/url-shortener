@@ -10,14 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/artemstreltsov/url-shortener/internal/database"
 	"github.com/artemstreltsov/url-shortener/internal/handlers"
 	"github.com/artemstreltsov/url-shortener/internal/safebrowsing"
+	"github.com/joho/godotenv"
 )
 
 func init() {
-	// Register the database.User type with gob
 	gob.Register(&database.User{})
 }
 
