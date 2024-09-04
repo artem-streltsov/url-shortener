@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -33,6 +34,24 @@ func main() {
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "database/database.sqlite3"
+	}
+
+	dbPath = os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "database/database.sqlite3"
+	}
+
+	// Touch the database file if it doesn't exist
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		dir := filepath.Dir(dbPath)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			log.Fatalf("Error creating directory for database: %v", err)
+		}
+		file, err := os.Create(dbPath)
+		if err != nil {
+			log.Fatalf("Error creating database file: %v", err)
+		}
+		file.Close()
 	}
 
 	db, err := database.NewDB(dbPath)
