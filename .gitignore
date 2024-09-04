@@ -27,3 +27,4 @@ go.work.sum
 # Database
 database/*.sqlite3
 database/safebrowsing_db
+url-shortener
