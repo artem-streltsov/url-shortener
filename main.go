@@ -22,19 +22,11 @@ func init() {
 }
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found")
-	}
+	godotenv.Load() // Load .env file if it exists, ignore error if it doesn't
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	port := getEnvWithDefault("PORT", "8080")
 
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		dbPath = "database/database.sqlite3"
-	}
+	dbPath := getEnvWithDefault("DB_PATH", "database/database.sqlite3")
 
 	dbPath = os.Getenv("DB_PATH")
 	if dbPath == "" {
@@ -61,7 +53,7 @@ func main() {
 	defer db.Close()
 
 	if err := safebrowsing.InitSafeBrowsing(); err != nil {
-		log.Fatalf("Error initializing Safe Browsing: %v", err)
+		log.Printf("Error initializing Safe Browsing: %v", err)
 	}
 	defer safebrowsing.Close()
 
@@ -92,4 +84,12 @@ func main() {
 	}
 
 	log.Println("Server exiting")
+}
+
+func getEnvWithDefault(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
