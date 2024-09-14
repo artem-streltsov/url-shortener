@@ -53,7 +53,7 @@ func main() {
 	defer db.Close()
 
 	if err := safebrowsing.InitSafeBrowsing(); err != nil {
-		log.Printf("Error initializing Safe Browsing: %v", err)
+		log.Fatalf("Error initializing Safe Browsing: %v", err)
 	}
 	defer safebrowsing.Close()
 
