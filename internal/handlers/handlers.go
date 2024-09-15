@@ -102,7 +102,20 @@ func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
-		err := h.templates.ExecuteTemplate(w, "new.html", nil)
+		flashes := session.Flashes("error")
+		var errorMsg string
+		if len(flashes) > 0 {
+			errorMsg, _ = flashes[0].(string)
+		}
+		session.Save(r, w)
+
+		data := struct {
+			Error string
+		}{
+			Error: errorMsg,
+		}
+
+		err := h.templates.ExecuteTemplate(w, "new.html", data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -110,7 +123,9 @@ func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		err := r.ParseForm()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			session.AddFlash("Error parsing form", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, "/new", http.StatusSeeOther)
 			return
 		}
 
@@ -118,23 +133,32 @@ func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
 		password := r.Form.Get("password")
 
 		if url == "" {
-			http.Error(w, "URL is required", http.StatusBadRequest)
+			session.AddFlash("URL is required", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, "/new", http.StatusSeeOther)
 			return
 		}
 
-		if !utils.IsValidURL(url) {
-			http.Error(w, "Invalid URL", http.StatusBadRequest)
+		url, isValid := utils.IsValidURL(url)
+		if !isValid {
+			session.AddFlash("Invalid URL", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, "/new", http.StatusSeeOther)
 			return
 		}
 
 		isSafe, err := safebrowsing.IsSafeURL(url)
 		if err != nil {
-			http.Error(w, "Error checking URL safety", http.StatusInternalServerError)
+			session.AddFlash("The provided URL is not safe", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, "/new", http.StatusSeeOther)
 			return
 		}
 
 		if !isSafe {
-			http.Error(w, "The provided URL is not safe", http.StatusBadRequest)
+			session.AddFlash("The provided URL is not safe", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, "/new", http.StatusSeeOther)
 			return
 		}
 
@@ -144,17 +168,23 @@ func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
 		if password != "" {
 			hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 			if err != nil {
-				http.Error(w, "Error hashing password", http.StatusInternalServerError)
+				session.AddFlash("Error hashing password", "error")
+				session.Save(r, w)
+				http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
 				return
 			}
 			hashedPassword = string(hash)
 		}
 
 		if err := h.db.InsertURL(url, key, user.ID, hashedPassword); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			session.AddFlash("Error inserting URL into database", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, "/new", http.StatusSeeOther)
 			return
 		}
 
+		session.AddFlash("URL successfully added", "success")
+		session.Save(r, w)
 		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -343,6 +373,22 @@ func (h *Handler) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	errorFlashes := session.Flashes("error")
+	var errorMsg string
+	if len(errorFlashes) > 0 {
+		errorMsg, _ = errorFlashes[0].(string)
+	}
+
+	var successMsg string
+	if errorMsg == "" {
+		successFlashes := session.Flashes("success")
+		if len(successFlashes) > 0 {
+			successMsg, _ = successFlashes[0].(string)
+		}
+	}
+
+	session.Save(r, w)
+
 	urls, err := h.db.GetURLsByUserID(user.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -350,13 +396,17 @@ func (h *Handler) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		User *database.User
-		URLs []database.URL
-		Host string
+		User    *database.User
+		URLs    []database.URL
+		Host    string
+		Success string
+		Error   string
 	}{
-		User: user,
-		URLs: urls,
-		Host: r.Host,
+		User:    user,
+		URLs:    urls,
+		Host:    r.Host,
+		Success: successMsg,
+		Error:   errorMsg,
 	}
 
 	err = h.templates.ExecuteTemplate(w, "dashboard.html", data)
@@ -376,30 +426,46 @@ func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	urlID, err := strconv.ParseInt(strings.TrimPrefix(r.URL.Path, "/edit/"), 10, 64)
 	if err != nil {
-		http.Error(w, "Invalid URL ID", http.StatusBadRequest)
+		session.AddFlash("Invalid URL ID", "error")
+		session.Save(r, w)
+		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 		return
 	}
 
 	url, err := h.db.GetURLByID(urlID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		session.AddFlash("URL not found", "error")
+		session.Save(r, w)
+		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 		return
 	}
 
 	if url.UserID != user.ID {
-		http.Error(w, "Unauthorized", http.StatusForbidden)
+		session.AddFlash("Unauthorized access", "error")
+		session.Save(r, w)
+		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 		return
 	}
 
 	switch r.Method {
 	case http.MethodGet:
-		data := struct {
-			URL  *database.URL
-			Host string
-		}{
-			URL:  url,
-			Host: r.Host,
+		flashes := session.Flashes("error")
+		var errorMsg string
+		if len(flashes) > 0 {
+			errorMsg, _ = flashes[0].(string)
 		}
+		session.Save(r, w)
+
+		data := struct {
+			URL   *database.URL
+			Host  string
+			Error string
+		}{
+			URL:   url,
+			Host:  r.Host,
+			Error: errorMsg,
+		}
+
 		err := h.templates.ExecuteTemplate(w, "edit.html", data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -410,23 +476,32 @@ func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
 		newPassword := r.FormValue("password")
 
 		if newURL == "" {
-			http.Error(w, "URL is required", http.StatusBadRequest)
+			session.AddFlash("URL is required", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
 			return
 		}
 
-		if !utils.IsValidURL(newURL) {
-			http.Error(w, "Invalid URL", http.StatusBadRequest)
+		newURL, isValid := utils.IsValidURL(newURL)
+		if !isValid {
+			session.AddFlash("Invalid URL provided", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
 			return
 		}
 
 		isSafe, err := safebrowsing.IsSafeURL(newURL)
 		if err != nil {
-			http.Error(w, "Error checking URL safety", http.StatusInternalServerError)
+			session.AddFlash("Error checking URL safety", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
 			return
 		}
 
 		if !isSafe {
-			http.Error(w, "The provided URL is not safe", http.StatusBadRequest)
+			session.AddFlash("The provided URL is not safe", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
 			return
 		}
 
@@ -434,7 +509,9 @@ func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
 		if newPassword != "" {
 			hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 			if err != nil {
-				http.Error(w, "Error hashing password", http.StatusInternalServerError)
+				session.AddFlash("Error hashing password", "error")
+				session.Save(r, w)
+				http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
 				return
 			}
 			hashedPassword = string(hash)
@@ -442,10 +519,14 @@ func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
 
 		err = h.db.UpdateURL(urlID, newURL, hashedPassword)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			session.AddFlash("Error updating the URL", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
 			return
 		}
 
+		session.AddFlash("URL updated successfully", "success")
+		session.Save(r, w)
 		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

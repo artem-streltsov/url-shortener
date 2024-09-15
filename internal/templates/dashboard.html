@@ -39,6 +39,12 @@
                     <a href="/logout" class="btn btn-secondary mb-2 mobile-full-width">Logout</a>
                 </div>
                 <h2>Your Shortened URLs</h2>
+                {{if .Error}}
+                <div class="alert alert-danger">{{.Error}}</div>
+                {{end}}
+                {{if .Success}}
+                <div class="alert alert-success">{{.Success}}</div>
+                {{end}}
                 <div class="desktop-only">
                     <div class="table-responsive">
                         <table class="table table-striped">
