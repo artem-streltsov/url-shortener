@@ -22,7 +22,7 @@ func init() {
 }
 
 func main() {
-	godotenv.Load() // Load .env file if it exists, ignore error if it doesn't
+	godotenv.Load()
 
 	port := getEnvWithDefault("PORT", "8080")
 
@@ -33,7 +33,6 @@ func main() {
 		dbPath = "database/database.sqlite3"
 	}
 
-	// Touch the database file if it doesn't exist
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		dir := filepath.Dir(dbPath)
 		if err := os.MkdirAll(dir, 0755); err != nil {
