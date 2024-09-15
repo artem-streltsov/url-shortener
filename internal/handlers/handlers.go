@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/artemstreltsov/url-shortener/internal/database"
-	"github.com/artemstreltsov/url-shortener/internal/middleware"
-	"github.com/artemstreltsov/url-shortener/internal/safebrowsing"
-	"github.com/artemstreltsov/url-shortener/internal/utils"
+	"github.com/artem-streltsov/url-shortener/internal/database"
+	"github.com/artem-streltsov/url-shortener/internal/middleware"
+	"github.com/artem-streltsov/url-shortener/internal/safebrowsing"
+	"github.com/artem-streltsov/url-shortener/internal/utils"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )

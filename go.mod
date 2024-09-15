@@ -1,4 +1,4 @@
-module github.com/artemstreltsov/url-shortener
+module github.com/artem-streltsov/url-shortener
 
 go 1.20
 

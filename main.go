@@ -11,9 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/artemstreltsov/url-shortener/internal/database"
-	"github.com/artemstreltsov/url-shortener/internal/handlers"
-	"github.com/artemstreltsov/url-shortener/internal/safebrowsing"
+	"github.com/artem-streltsov/url-shortener/internal/database"
+	"github.com/artem-streltsov/url-shortener/internal/handlers"
+	"github.com/artem-streltsov/url-shortener/internal/safebrowsing"
 	"github.com/joho/godotenv"
 )
 
