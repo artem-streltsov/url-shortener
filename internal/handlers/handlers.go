@@ -381,7 +381,7 @@ func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 
 		user, err := h.db.GetUserByUsername(username)
-		if err != nil {
+		if err != nil || user == nil {
 			session.AddFlash("Invalid username or password", "error")
 			session.Save(r, w)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
