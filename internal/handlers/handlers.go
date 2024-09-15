@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"html/template"
 	"log"
 	"net/http"
@@ -27,18 +25,13 @@ type Handler struct {
 }
 
 func NewHandler(db *database.DB) *Handler {
+	// TODO: use environment variable
 	templatesDir := "./internal/templates"
 	templates := template.Must(template.ParseGlob(filepath.Join(templatesDir, "*.html")))
 
 	secretKey := os.Getenv("SESSION_SECRET_KEY")
 	if secretKey == "" {
-		key := make([]byte, 32)
-		_, err := rand.Read(key)
-		if err != nil {
-			log.Fatalf("Failed to generate random key: %v", err)
-		}
-		secretKey = base64.StdEncoding.EncodeToString(key)
-		log.Println("WARNING: SESSION_SECRET_KEY not set. Using a randomly generated key.")
+		log.Fatalf("SESSION_SECRET_KEY environment variable is not set")
 	}
 
 	store := sessions.NewCookieStore([]byte(secretKey))
@@ -62,6 +55,7 @@ func (h *Handler) Routes() http.Handler {
 }
 
 func (h *Handler) indexHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: create a 404 page, etc
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -192,6 +186,7 @@ func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) redirectHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: add flashes
 	key := strings.TrimPrefix(r.URL.Path, "/r/")
 	if key == "" {
 		http.Error(w, "Key is required", http.StatusBadRequest)

@@ -24,13 +24,14 @@ func init() {
 func main() {
 	godotenv.Load()
 
-	port := getEnvWithDefault("PORT", "8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatalf("PORT environment variable is not set")
+	}
 
-	dbPath := getEnvWithDefault("DB_PATH", "database/database.sqlite3")
-
-	dbPath = os.Getenv("DB_PATH")
+	dbPath := os.Getenv("PORT")
 	if dbPath == "" {
-		dbPath = "database/database.sqlite3"
+		log.Fatalf("DB_PATH environment variable is not set")
 	}
 
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
