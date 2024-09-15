@@ -3,6 +3,8 @@ package utils
 import (
 	"crypto/sha256"
 	"net/url"
+    "strconv"
+	"time"
 )
 
 const base62Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -16,7 +18,9 @@ func encodeBytesToBase62(input []byte) string {
 }
 
 func GenerateKey(url string) string {
-	hash := sha256.Sum256([]byte(url))
+    currentTime := strconv.FormatInt(time.Now().Unix(), 10)
+    hashInput := url + currentTime
+	hash := sha256.Sum256([]byte(hashInput))
 	return encodeBytesToBase62(hash[:])[:10]
 }
 
