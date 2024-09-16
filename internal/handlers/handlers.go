@@ -113,12 +113,12 @@ func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
 			Error: errorMsg,
 		}
 
-    tmpl, err := template.ParseFiles("internal/templates/new.html")
+    tmpl, err := template.ParseFiles("internal/templates/base.html", "internal/templates/new.html")
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-    err = tmpl.ExecuteTemplate(w, "new.html", data)
+    err = tmpl.ExecuteTemplate(w, "base.html", data)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
