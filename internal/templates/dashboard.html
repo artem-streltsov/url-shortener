@@ -23,6 +23,61 @@
       margin-bottom: 1rem;
     }
   </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const copyButtons = document.querySelectorAll(".copy-btn");
+      copyButtons.forEach((button) => {
+        button.addEventListener("click", function () {
+          const url = this.getAttribute("data-url");
+          if (navigator.clipboard) {
+            navigator.clipboard
+              .writeText(url)
+              .then(() => {
+                updateCopyButton(this);
+              })
+              .catch((err) => {
+                console.error("Failed to copy text: ", err);
+                fallbackCopyTextToClipboard(url, this);
+              });
+          } else {
+            fallbackCopyTextToClipboard(url, this);
+          }
+        });
+      });
+
+      function updateCopyButton(button) {
+        const icon = button.querySelector("i");
+        icon.classList.remove("bi-clipboard");
+        icon.classList.add("bi-check");
+        setTimeout(() => {
+          icon.classList.remove("bi-check");
+          icon.classList.add("bi-clipboard");
+        }, 1500);
+      }
+
+      function fallbackCopyTextToClipboard(text, button) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed"; // Avoid scrolling to bottom
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          const successful = document.execCommand("copy");
+          if (successful) {
+            updateCopyButton(button);
+          } else {
+            console.error("Fallback: Copying text command was unsuccessful");
+          }
+        } catch (err) {
+          console.error("Fallback: Oops, unable to copy", err);
+        }
+
+        document.body.removeChild(textArea);
+      }
+    });
+  </script>
 {{ end }}
 
 {{ define "content" }}
@@ -149,59 +204,4 @@
       </div>
     </div>
   </div>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const copyButtons = document.querySelectorAll(".copy-btn");
-      copyButtons.forEach((button) => {
-        button.addEventListener("click", function () {
-          const url = this.getAttribute("data-url");
-          if (navigator.clipboard) {
-            navigator.clipboard
-              .writeText(url)
-              .then(() => {
-                updateCopyButton(this);
-              })
-              .catch((err) => {
-                console.error("Failed to copy text: ", err);
-                fallbackCopyTextToClipboard(url, this);
-              });
-          } else {
-            fallbackCopyTextToClipboard(url, this);
-          }
-        });
-      });
-
-      function updateCopyButton(button) {
-        const icon = button.querySelector("i");
-        icon.classList.remove("bi-clipboard");
-        icon.classList.add("bi-check");
-        setTimeout(() => {
-          icon.classList.remove("bi-check");
-          icon.classList.add("bi-clipboard");
-        }, 1500);
-      }
-
-      function fallbackCopyTextToClipboard(text, button) {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed"; // Avoid scrolling to bottom
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-
-        try {
-          const successful = document.execCommand("copy");
-          if (successful) {
-            updateCopyButton(button);
-          } else {
-            console.error("Fallback: Copying text command was unsuccessful");
-          }
-        } catch (err) {
-          console.error("Fallback: Oops, unable to copy", err);
-        }
-
-        document.body.removeChild(textArea);
-      }
-    });
-  </script>
 {{ end }}
