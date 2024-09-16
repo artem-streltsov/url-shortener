@@ -78,12 +78,12 @@ func (h *Handler) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	session.Save(r, w)
 
-    tmpl, err := template.ParseFiles("internal/templates/index.html")
+    tmpl, err := template.ParseFiles("internal/templates/base.html", "internal/templates/index.html")
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-    err = tmpl.ExecuteTemplate(w, "index.html", data)
+    err = tmpl.ExecuteTemplate(w, "base.html", data)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
