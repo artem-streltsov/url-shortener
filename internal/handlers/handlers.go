@@ -503,12 +503,12 @@ func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
 			Error: errorMsg,
 		}
 
-    tmpl, err := template.ParseFiles("internal/templates/edit.html")
+    tmpl, err := template.ParseFiles("internal/templates/base.html", "internal/templates/edit.html")
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-    err = tmpl.ExecuteTemplate(w, "edit.html", data)
+    err = tmpl.ExecuteTemplate(w, "base.html", data)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
