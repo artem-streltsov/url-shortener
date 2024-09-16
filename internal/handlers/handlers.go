@@ -268,12 +268,12 @@ func (h *Handler) redirectHandler(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) registerHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-    tmpl, err := template.ParseFiles("internal/templates/register.html")
+    tmpl, err := template.ParseFiles("internal/templates/base.html", "internal/templates/register.html")
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-    err = tmpl.ExecuteTemplate(w, "register.html", nil)
+    err = tmpl.ExecuteTemplate(w, "base.html", nil)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
