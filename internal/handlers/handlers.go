@@ -641,12 +641,12 @@ func (h *Handler) urlDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		ShortURL: shortURL,
 	}
 
-    tmpl, err := template.ParseFiles("internal/templates/details.html")
+    tmpl, err := template.ParseFiles("internal/templates/base.html", "internal/templates/details.html")
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-    err = tmpl.ExecuteTemplate(w, "details.html", data)
+    err = tmpl.ExecuteTemplate(w, "base.html", data)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
