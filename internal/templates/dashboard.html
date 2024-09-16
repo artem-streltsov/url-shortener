@@ -1,223 +1,207 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard - URL Shortener</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css"
-    />
-    <style>
-      .table-responsive {
-        overflow-x: auto;
+{{ define "title" }}Dashboard - URL Shortener{{ end }}
+
+{{ define "head" }}
+  <style>
+    .table-responsive {
+      overflow-x: auto;
+    }
+    @media (max-width: 767px) {
+      .mobile-full-width {
+        width: 100%;
+        margin-bottom: 0.5rem;
       }
-      @media (max-width: 767px) {
-        .mobile-full-width {
-          width: 100%;
-          margin-bottom: 0.5rem;
-        }
-        .desktop-only {
-          display: none;
-        }
+      .desktop-only {
+        display: none;
       }
-      @media (min-width: 768px) {
-        .mobile-only {
-          display: none;
-        }
+    }
+    @media (min-width: 768px) {
+      .mobile-only {
+        display: none;
       }
-      .card {
-        margin-bottom: 1rem;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container mt-5">
-      <div class="row">
-        <div class="col-md-12">
-          <h1 class="mb-4">Welcome, {{ .User.Username }}!</h1>
-          <div
-            class="d-flex justify-content-between align-items-center mb-3 flex-wrap"
+    }
+    .card {
+      margin-bottom: 1rem;
+    }
+  </style>
+{{ end }}
+
+{{ define "content" }}
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-md-12">
+        <h1 class="mb-4">Welcome, {{ .User.Username }}!</h1>
+        <div
+          class="d-flex justify-content-between align-items-center mb-3 flex-wrap"
+        >
+          <a href="/new" class="btn btn-primary mb-2 mobile-full-width"
+            >Create New Short URL</a
           >
-            <a href="/new" class="btn btn-primary mb-2 mobile-full-width"
-              >Create New Short URL</a
-            >
-            <a href="/logout" class="btn btn-secondary mb-2 mobile-full-width"
-              >Logout</a
-            >
-          </div>
-          <h2>Your Shortened URLs</h2>
-          {{ if .Error }}
-            <div class="alert alert-danger">{{ .Error }}</div>
-          {{ end }}
-          {{ if .Success }}
-            <div class="alert alert-success">{{ .Success }}</div>
-          {{ end }}
-          <div class="desktop-only">
-            <div class="table-responsive">
-              <table class="table table-striped">
-                <thead>
+          <a href="/logout" class="btn btn-secondary mb-2 mobile-full-width"
+            >Logout</a
+          >
+        </div>
+        <h2>Your Shortened URLs</h2>
+        {{ if .Error }}
+          <div class="alert alert-danger">{{ .Error }}</div>
+        {{ end }}
+        {{ if .Success }}
+          <div class="alert alert-success">{{ .Success }}</div>
+        {{ end }}
+        <div class="desktop-only">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Original URL</th>
+                  <th>Short URL</th>
+                  <th>Created At</th>
+                  <th>Clicks</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{ range .URLs }}
                   <tr>
-                    <th>Original URL</th>
-                    <th>Short URL</th>
-                    <th>Created At</th>
-                    <th>Clicks</th>
-                    <th>Actions</th>
+                    <td>
+                      <div class="text-truncate" style="max-width: 200px">
+                        {{ .URL }}
+                      </div>
+                    </td>
+                    <td>
+                      <div class="input-group">
+                        <input
+                          type="text"
+                          class="form-control"
+                          value="http://{{ $.Host }}/r/{{ .Key }}"
+                          readonly
+                        />
+                        <button
+                          class="btn btn-outline-secondary copy-btn"
+                          type="button"
+                          data-url="http://{{ $.Host }}/r/{{ .Key }}"
+                        >
+                          <i class="bi bi-clipboard"></i>
+                        </button>
+                      </div>
+                    </td>
+                    <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+                    <td>{{ .Clicks }}</td>
+                    <td>
+                      <div class="btn-group" role="group">
+                        <a href="/details/{{ .ID }}" class="btn btn-sm btn-info"
+                          >Details</a
+                        >
+                        <a href="/edit/{{ .ID }}" class="btn btn-sm btn-primary"
+                          >Edit</a
+                        >
+                        <a
+                          href="/delete/{{ .ID }}"
+                          class="btn btn-sm btn-danger"
+                          onclick="return confirm('Are you sure you want to delete this URL?')"
+                          >Delete</a
+                        >
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {{ range .URLs }}
-                    <tr>
-                      <td>
-                        <div class="text-truncate" style="max-width: 200px">
-                          {{ .URL }}
-                        </div>
-                      </td>
-                      <td>
-                        <div class="input-group">
-                          <input
-                            type="text"
-                            class="form-control"
-                            value="http://{{ $.Host }}/r/{{ .Key }}"
-                            readonly
-                          />
-                          <button
-                            class="btn btn-outline-secondary copy-btn"
-                            type="button"
-                            data-url="http://{{ $.Host }}/r/{{ .Key }}"
-                          >
-                            <i class="bi bi-clipboard"></i>
-                          </button>
-                        </div>
-                      </td>
-                      <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
-                      <td>{{ .Clicks }}</td>
-                      <td>
-                        <div class="btn-group" role="group">
-                          <a
-                            href="/details/{{ .ID }}"
-                            class="btn btn-sm btn-info"
-                            >Details</a
-                          >
-                          <a
-                            href="/edit/{{ .ID }}"
-                            class="btn btn-sm btn-primary"
-                            >Edit</a
-                          >
-                          <a
-                            href="/delete/{{ .ID }}"
-                            class="btn btn-sm btn-danger"
-                            onclick="return confirm('Are you sure you want to delete this URL?')"
-                            >Delete</a
-                          >
-                        </div>
-                      </td>
-                    </tr>
-                  {{ end }}
-                </tbody>
-              </table>
-            </div>
+                {{ end }}
+              </tbody>
+            </table>
           </div>
-          <div class="mobile-only">
-            {{ range .URLs }}
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title text-truncate">{{ .URL }}</h5>
-                  <div class="input-group mb-2">
-                    <input
-                      type="text"
-                      class="form-control"
-                      value="http://{{ $.Host }}/r/{{ .Key }}"
-                      readonly
-                    />
-                    <button
-                      class="btn btn-outline-secondary copy-btn"
-                      type="button"
-                      data-url="http://{{ $.Host }}/r/{{ .Key }}"
-                    >
-                      <i class="bi bi-clipboard"></i>
-                    </button>
-                  </div>
-                  <p class="card-text">
-                    Created:
-                    {{ .CreatedAt.Format "2006-01-02 15:04:05" }}
-                  </p>
-                  <p class="card-text">Clicks: {{ .Clicks }}</p>
-                  <div class="d-flex justify-content-between">
-                    <a href="/edit/{{ .ID }}" class="btn btn-primary">Edit</a>
-                    <a
-                      href="/delete/{{ .ID }}"
-                      class="btn btn-danger"
-                      onclick="return confirm('Are you sure you want to delete this URL?')"
-                      >Delete</a
-                    >
-                  </div>
+        </div>
+        <div class="mobile-only">
+          {{ range .URLs }}
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title text-truncate">{{ .URL }}</h5>
+                <div class="input-group mb-2">
+                  <input
+                    type="text"
+                    class="form-control"
+                    value="http://{{ $.Host }}/r/{{ .Key }}"
+                    readonly
+                  />
+                  <button
+                    class="btn btn-outline-secondary copy-btn"
+                    type="button"
+                    data-url="http://{{ $.Host }}/r/{{ .Key }}"
+                  >
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                </div>
+                <p class="card-text">
+                  Created:
+                  {{ .CreatedAt.Format "2006-01-02 15:04:05" }}
+                </p>
+                <p class="card-text">Clicks: {{ .Clicks }}</p>
+                <div class="d-flex justify-content-between">
+                  <a href="/edit/{{ .ID }}" class="btn btn-primary">Edit</a>
+                  <a
+                    href="/delete/{{ .ID }}"
+                    class="btn btn-danger"
+                    onclick="return confirm('Are you sure you want to delete this URL?')"
+                    >Delete</a
+                  >
                 </div>
               </div>
-            {{ end }}
-          </div>
+            </div>
+          {{ end }}
         </div>
       </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const copyButtons = document.querySelectorAll(".copy-btn");
-        copyButtons.forEach((button) => {
-          button.addEventListener("click", function () {
-            const url = this.getAttribute("data-url");
-            if (navigator.clipboard) {
-              navigator.clipboard
-                .writeText(url)
-                .then(() => {
-                  updateCopyButton(this);
-                })
-                .catch((err) => {
-                  console.error("Failed to copy text: ", err);
-                  fallbackCopyTextToClipboard(url, this);
-                });
-            } else {
-              fallbackCopyTextToClipboard(url, this);
-            }
-          });
-        });
-
-        function updateCopyButton(button) {
-          const icon = button.querySelector("i");
-          icon.classList.remove("bi-clipboard");
-          icon.classList.add("bi-check");
-          setTimeout(() => {
-            icon.classList.remove("bi-check");
-            icon.classList.add("bi-clipboard");
-          }, 1500);
-        }
-
-        function fallbackCopyTextToClipboard(text, button) {
-          const textArea = document.createElement("textarea");
-          textArea.value = text;
-          textArea.style.position = "fixed"; // Avoid scrolling to bottom
-          document.body.appendChild(textArea);
-          textArea.focus();
-          textArea.select();
-
-          try {
-            const successful = document.execCommand("copy");
-            if (successful) {
-              updateCopyButton(button);
-            } else {
-              console.error("Fallback: Copying text command was unsuccessful");
-            }
-          } catch (err) {
-            console.error("Fallback: Oops, unable to copy", err);
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const copyButtons = document.querySelectorAll(".copy-btn");
+      copyButtons.forEach((button) => {
+        button.addEventListener("click", function () {
+          const url = this.getAttribute("data-url");
+          if (navigator.clipboard) {
+            navigator.clipboard
+              .writeText(url)
+              .then(() => {
+                updateCopyButton(this);
+              })
+              .catch((err) => {
+                console.error("Failed to copy text: ", err);
+                fallbackCopyTextToClipboard(url, this);
+              });
+          } else {
+            fallbackCopyTextToClipboard(url, this);
           }
-
-          document.body.removeChild(textArea);
-        }
+        });
       });
-    </script>
-  </body>
-</html>
+
+      function updateCopyButton(button) {
+        const icon = button.querySelector("i");
+        icon.classList.remove("bi-clipboard");
+        icon.classList.add("bi-check");
+        setTimeout(() => {
+          icon.classList.remove("bi-check");
+          icon.classList.add("bi-clipboard");
+        }, 1500);
+      }
+
+      function fallbackCopyTextToClipboard(text, button) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed"; // Avoid scrolling to bottom
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          const successful = document.execCommand("copy");
+          if (successful) {
+            updateCopyButton(button);
+          } else {
+            console.error("Fallback: Copying text command was unsuccessful");
+          }
+        } catch (err) {
+          console.error("Fallback: Oops, unable to copy", err);
+        }
+
+        document.body.removeChild(textArea);
+      }
+    });
+  </script>
+{{ end }}
