@@ -29,7 +29,7 @@ func main() {
 		log.Fatalf("PORT environment variable is not set")
 	}
 
-	dbPath := os.Getenv("PORT")
+	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		log.Fatalf("DB_PATH environment variable is not set")
 	}
