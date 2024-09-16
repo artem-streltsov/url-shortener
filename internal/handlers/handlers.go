@@ -223,12 +223,12 @@ func (h *Handler) redirectHandler(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
             data := struct{ Key string }{Key: key}
-    tmpl, err := template.ParseFiles("internal/templates/password.html")
+    tmpl, err := template.ParseFiles("internal/templates/base.html", "internal/templates/password.html")
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-    err = tmpl.ExecuteTemplate(w, "password.html", data)
+    err = tmpl.ExecuteTemplate(w, "base.html", data)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
