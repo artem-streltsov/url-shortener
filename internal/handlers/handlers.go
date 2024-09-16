@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -23,22 +22,18 @@ import (
 
 type Handler struct {
 	db        *database.DB
-	templates *template.Template
 	store     *sessions.CookieStore
 }
 
 func NewHandler(db *database.DB) *Handler {
 	// TODO: use environment variable
-	templatesDir := "./internal/templates"
-	templates := template.Must(template.ParseGlob(filepath.Join(templatesDir, "*.html")))
-
 	secretKey := os.Getenv("SESSION_SECRET_KEY")
 	if secretKey == "" {
 		log.Fatalf("SESSION_SECRET_KEY environment variable is not set")
 	}
 
 	store := sessions.NewCookieStore([]byte(secretKey))
-	return &Handler{db: db, templates: templates, store: store}
+	return &Handler{db: db, store: store}
 }
 
 func (h *Handler) Routes() http.Handler {
@@ -83,11 +78,16 @@ func (h *Handler) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	session.Save(r, w)
 
-	err := h.templates.ExecuteTemplate(w, "index.html", data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+    tmpl, err := template.ParseFiles("internal/templates/index.html")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    err = tmpl.ExecuteTemplate(w, "index.html", data)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 }
 
 func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
@@ -113,11 +113,16 @@ func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
 			Error: errorMsg,
 		}
 
-		err := h.templates.ExecuteTemplate(w, "new.html", data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+    tmpl, err := template.ParseFiles("internal/templates/new.html")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    err = tmpl.ExecuteTemplate(w, "new.html", data)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 	case http.MethodPost:
 		err := r.ParseForm()
 		if err != nil {
@@ -217,10 +222,17 @@ func (h *Handler) redirectHandler(w http.ResponseWriter, r *http.Request) {
 	if url.Password != "" {
 		switch r.Method {
 		case http.MethodGet:
-			err := h.templates.ExecuteTemplate(w, "password.html", struct{ Key string }{Key: key})
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
+            data := struct{ Key string }{Key: key}
+    tmpl, err := template.ParseFiles("internal/templates/password.html")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    err = tmpl.ExecuteTemplate(w, "password.html", data)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 			return
 		case http.MethodPost:
 			password := r.FormValue("password")
@@ -256,11 +268,16 @@ func (h *Handler) redirectHandler(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) registerHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		err := h.templates.ExecuteTemplate(w, "register.html", nil)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+    tmpl, err := template.ParseFiles("internal/templates/register.html")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    err = tmpl.ExecuteTemplate(w, "register.html", nil)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 	case http.MethodPost:
 		username := r.FormValue("username")
 		email := r.FormValue("email")
@@ -316,11 +333,16 @@ func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
 			Error: errorMsg,
 		}
 
-		err := h.templates.ExecuteTemplate(w, "login.html", data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+    tmpl, err := template.ParseFiles("internal/templates/login.html")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    err = tmpl.ExecuteTemplate(w, "login.html", data)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 	case http.MethodPost:
 		username := r.FormValue("username")
 		password := r.FormValue("password")
@@ -419,11 +441,16 @@ func (h *Handler) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 		Error:   errorMsg,
 	}
 
-	err = h.templates.ExecuteTemplate(w, "dashboard.html", data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+    tmpl, err := template.ParseFiles("internal/templates/base.html", "internal/templates/dashboard.html")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    err = tmpl.ExecuteTemplate(w, "base.html", data)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 }
 
 func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
@@ -476,11 +503,16 @@ func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
 			Error: errorMsg,
 		}
 
-		err := h.templates.ExecuteTemplate(w, "edit.html", data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+    tmpl, err := template.ParseFiles("internal/templates/edit.html")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    err = tmpl.ExecuteTemplate(w, "edit.html", data)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 	case http.MethodPost:
 		newURL := r.FormValue("url")
 		newPassword := r.FormValue("password")
@@ -609,9 +641,14 @@ func (h *Handler) urlDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		ShortURL: shortURL,
 	}
 
-	err = h.templates.ExecuteTemplate(w, "details.html", data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+    tmpl, err := template.ParseFiles("internal/templates/details.html")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    err = tmpl.ExecuteTemplate(w, "details.html", data)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 }
