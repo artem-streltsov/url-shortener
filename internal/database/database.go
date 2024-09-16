@@ -27,6 +27,7 @@ type URL struct {
 	CreatedAt time.Time
 	Clicks    int
 	Password  string
+	QRCode    string
 }
 
 func NewDB(dbPath string) (*DB, error) {
@@ -55,16 +56,17 @@ func initSchema(db *sql.DB) error {
 		password TEXT NOT NULL
 	);
 
-	CREATE TABLE IF NOT EXISTS urls (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		user_id INTEGER NOT NULL,
-		url TEXT NOT NULL,
-		key TEXT UNIQUE NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		clicks INTEGER DEFAULT 0,
-		password TEXT,
-		FOREIGN KEY (user_id) REFERENCES users(id)
-	);
+    CREATE TABLE IF NOT EXISTS urls (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        url TEXT NOT NULL,
+        key TEXT UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        clicks INTEGER DEFAULT 0,
+        password TEXT,
+        qr_code TEXT,  -- Add this line to store the QR code in base64 format
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    );
 	`
 
 	_, err := db.Exec(schema)
@@ -103,14 +105,14 @@ func (db *DB) GetUserByUsername(username string) (*User, error) {
 	return &user, nil
 }
 
-func (db *DB) InsertURL(url, key string, userID int64, password string) error {
-	stmt, err := db.Prepare("INSERT INTO urls (url, key, user_id, password) VALUES (?, ?, ?, ?)")
+func (db *DB) InsertURL(url, key string, userID int64, password string, qrCode string) error {
+	stmt, err := db.Prepare("INSERT INTO urls (url, key, user_id, password, qr_code) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		return fmt.Errorf("error preparing statement: %w", err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(url, key, userID, password)
+	_, err = stmt.Exec(url, key, userID, password, qrCode) // Add qrCode as an argument
 	if err != nil {
 		return fmt.Errorf("error inserting URL: %w", err)
 	}
@@ -179,7 +181,8 @@ func (db *DB) DeleteURL(id int64) error {
 
 func (db *DB) GetURLByID(id int64) (*URL, error) {
 	var url URL
-	err := db.QueryRow("SELECT id, user_id, url, key, created_at, clicks, password FROM urls WHERE id = ?", id).Scan(&url.ID, &url.UserID, &url.URL, &url.Key, &url.CreatedAt, &url.Clicks, &url.Password)
+	err := db.QueryRow("SELECT id, user_id, url, key, created_at, clicks, password, qr_code FROM urls WHERE id = ?", id).Scan(
+		&url.ID, &url.UserID, &url.URL, &url.Key, &url.CreatedAt, &url.Clicks, &url.Password, &url.QRCode)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("no URL found for id: %d", id)

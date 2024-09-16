@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/base64"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -15,6 +17,7 @@ import (
 	"github.com/artem-streltsov/url-shortener/internal/safebrowsing"
 	"github.com/artem-streltsov/url-shortener/internal/utils"
 	"github.com/gorilla/sessions"
+	"github.com/skip2/go-qrcode"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -49,6 +52,7 @@ func (h *Handler) Routes() http.Handler {
 	mux.HandleFunc("/dashboard", h.dashboardHandler)
 	mux.HandleFunc("/edit/", h.editURLHandler)
 	mux.HandleFunc("/delete/", h.deleteURLHandler)
+	mux.HandleFunc("/details/", h.urlDetailsHandler)
 
 	rl := middleware.NewRateLimiter(100, time.Minute)
 	return middleware.LoggingMiddleware(middleware.RateLimitingMiddleware(rl)(mux))
@@ -170,7 +174,18 @@ func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
 			hashedPassword = string(hash)
 		}
 
-		if err := h.db.InsertURL(url, key, user.ID, hashedPassword); err != nil {
+		shortURL := fmt.Sprintf("http://%s/r/%s", r.Host, key)
+		qrCode, err := qrcode.Encode(shortURL, qrcode.Medium, 256)
+		if err != nil {
+			session.AddFlash("Error generating QR code", "error")
+			session.Save(r, w)
+			http.Redirect(w, r, "/new", http.StatusSeeOther)
+			return
+		}
+
+		qrCodeBase64 := base64.StdEncoding.EncodeToString(qrCode)
+
+		if err := h.db.InsertURL(url, key, user.ID, hashedPassword, qrCodeBase64); err != nil {
 			session.AddFlash("Error inserting URL into database", "error")
 			session.Save(r, w)
 			http.Redirect(w, r, "/new", http.StatusSeeOther)
@@ -560,4 +575,43 @@ func (h *Handler) deleteURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+}
+
+func (h *Handler) urlDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	urlID, err := strconv.ParseInt(strings.TrimPrefix(r.URL.Path, "/details/"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid URL ID", http.StatusBadRequest)
+		return
+	}
+
+	url, err := h.db.GetURLByID(urlID)
+	if err != nil {
+		http.Error(w, "URL not found", http.StatusNotFound)
+		return
+	}
+
+	shortURL := fmt.Sprintf("http://%s/r/%s", r.Host, url.Key)
+	qrCode, err := qrcode.Encode(shortURL, qrcode.Medium, 256)
+	if err != nil {
+		http.Error(w, "Error generating QR code", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		URL      *database.URL
+		QRCode   string
+		Host     string
+		ShortURL string
+	}{
+		URL:      url,
+		QRCode:   base64.StdEncoding.EncodeToString(qrCode),
+		Host:     r.Host,
+		ShortURL: shortURL,
+	}
+
+	err = h.templates.ExecuteTemplate(w, "details.html", data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
