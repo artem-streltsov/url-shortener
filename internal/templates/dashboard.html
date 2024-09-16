@@ -39,7 +39,7 @@
     <div class="container mt-5">
       <div class="row">
         <div class="col-md-12">
-          <h1 class="mb-4">Welcome, {{.User.Username}}!</h1>
+          <h1 class="mb-4">Welcome, {{ .User.Username }}!</h1>
           <div
             class="d-flex justify-content-between align-items-center mb-3 flex-wrap"
           >
@@ -51,11 +51,12 @@
             >
           </div>
           <h2>Your Shortened URLs</h2>
-          {{if .Error}}
-          <div class="alert alert-danger">{{.Error}}</div>
-          {{end}} {{if .Success}}
-          <div class="alert alert-success">{{.Success}}</div>
-          {{end}}
+          {{ if .Error }}
+            <div class="alert alert-danger">{{ .Error }}</div>
+          {{ end }}
+          {{ if .Success }}
+            <div class="alert alert-success">{{ .Success }}</div>
+          {{ end }}
           <div class="desktop-only">
             <div class="table-responsive">
               <table class="table table-striped">
@@ -69,90 +70,95 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {{range .URLs}}
-                  <tr>
-                    <td>
-                      <div class="text-truncate" style="max-width: 200px">
-                        {{.URL}}
-                      </div>
-                    </td>
-                    <td>
-                      <div class="input-group">
-                        <input
-                          type="text"
-                          class="form-control"
-                          value="http://{{$.Host}}/r/{{.Key}}"
-                          readonly
-                        />
-                        <button
-                          class="btn btn-outline-secondary copy-btn"
-                          type="button"
-                          data-url="http://{{$.Host}}/r/{{.Key}}"
-                        >
-                          <i class="bi bi-clipboard"></i>
-                        </button>
-                      </div>
-                    </td>
-                    <td>{{.CreatedAt.Format "2006-01-02 15:04:05"}}</td>
-                    <td>{{.Clicks}}</td>
-                    <td>
-                      <div class="btn-group" role="group">
-                        <a href="/details/{{.ID}}" class="btn btn-sm btn-info"
-                          >Details</a
-                        >
-                        <a href="/edit/{{.ID}}" class="btn btn-sm btn-primary"
-                          >Edit</a
-                        >
-                        <a
-                          href="/delete/{{.ID}}"
-                          class="btn btn-sm btn-danger"
-                          onclick="return confirm('Are you sure you want to delete this URL?')"
-                          >Delete</a
-                        >
-                      </div>
-                    </td>
-                  </tr>
-                  {{end}}
+                  {{ range .URLs }}
+                    <tr>
+                      <td>
+                        <div class="text-truncate" style="max-width: 200px">
+                          {{ .URL }}
+                        </div>
+                      </td>
+                      <td>
+                        <div class="input-group">
+                          <input
+                            type="text"
+                            class="form-control"
+                            value="http://{{ $.Host }}/r/{{ .Key }}"
+                            readonly
+                          />
+                          <button
+                            class="btn btn-outline-secondary copy-btn"
+                            type="button"
+                            data-url="http://{{ $.Host }}/r/{{ .Key }}"
+                          >
+                            <i class="bi bi-clipboard"></i>
+                          </button>
+                        </div>
+                      </td>
+                      <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+                      <td>{{ .Clicks }}</td>
+                      <td>
+                        <div class="btn-group" role="group">
+                          <a
+                            href="/details/{{ .ID }}"
+                            class="btn btn-sm btn-info"
+                            >Details</a
+                          >
+                          <a
+                            href="/edit/{{ .ID }}"
+                            class="btn btn-sm btn-primary"
+                            >Edit</a
+                          >
+                          <a
+                            href="/delete/{{ .ID }}"
+                            class="btn btn-sm btn-danger"
+                            onclick="return confirm('Are you sure you want to delete this URL?')"
+                            >Delete</a
+                          >
+                        </div>
+                      </td>
+                    </tr>
+                  {{ end }}
                 </tbody>
               </table>
             </div>
           </div>
           <div class="mobile-only">
-            {{range .URLs}}
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title text-truncate">{{.URL}}</h5>
-                <div class="input-group mb-2">
-                  <input
-                    type="text"
-                    class="form-control"
-                    value="http://{{$.Host}}/r/{{.Key}}"
-                    readonly
-                  />
-                  <button
-                    class="btn btn-outline-secondary copy-btn"
-                    type="button"
-                    data-url="http://{{$.Host}}/r/{{.Key}}"
-                  >
-                    <i class="bi bi-clipboard"></i>
-                  </button>
-                </div>
-                <p class="card-text">
-                  Created: {{.CreatedAt.Format "2006-01-02 15:04:05"}}
-                </p>
-                <p class="card-text">Clicks: {{.Clicks}}</p>
-                <div class="d-flex justify-content-between">
-                  <a href="/edit/{{.ID}}" class="btn btn-primary">Edit</a>
-                  <a
-                    href="/delete/{{.ID}}"
-                    class="btn btn-danger"
-                    onclick="return confirm('Are you sure you want to delete this URL?')"
-                    >Delete</a
-                  >
+            {{ range .URLs }}
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title text-truncate">{{ .URL }}</h5>
+                  <div class="input-group mb-2">
+                    <input
+                      type="text"
+                      class="form-control"
+                      value="http://{{ $.Host }}/r/{{ .Key }}"
+                      readonly
+                    />
+                    <button
+                      class="btn btn-outline-secondary copy-btn"
+                      type="button"
+                      data-url="http://{{ $.Host }}/r/{{ .Key }}"
+                    >
+                      <i class="bi bi-clipboard"></i>
+                    </button>
+                  </div>
+                  <p class="card-text">
+                    Created:
+                    {{ .CreatedAt.Format "2006-01-02 15:04:05" }}
+                  </p>
+                  <p class="card-text">Clicks: {{ .Clicks }}</p>
+                  <div class="d-flex justify-content-between">
+                    <a href="/edit/{{ .ID }}" class="btn btn-primary">Edit</a>
+                    <a
+                      href="/delete/{{ .ID }}"
+                      class="btn btn-danger"
+                      onclick="return confirm('Are you sure you want to delete this URL?')"
+                      >Delete</a
+                    >
+                  </div>
                 </div>
               </div>
-            </div>
-            {{end}}
+            {{ end }}
           </div>
         </div>
       </div>
