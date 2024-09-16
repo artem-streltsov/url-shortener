@@ -9,6 +9,13 @@
       word-break: break-all;
     }
   </style>
+    <script>
+      function deleteURL() {
+        if (confirm("Are you sure you want to delete this URL?")) {
+          window.location.href = "/delete/{{.URL.ID}}";
+        }
+      }
+    </script>
 {{ end }}
 {{ define "content" }}
   <div class="container mt-5">
@@ -62,11 +69,4 @@
       </div>
     </div>
   </div>
-    <script>
-      function deleteURL() {
-        if (confirm("Are you sure you want to delete this URL?")) {
-          window.location.href = "/delete/{{.URL.ID}}";
-        }
-      }
-    </script>
 {{ end }}
