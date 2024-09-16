@@ -22,16 +22,16 @@
       <div class="row justify-content-center">
         <div class="col-lg-8 col-md-10 col-sm-12">
           <h1 class="mb-4">Edit URL</h1>
-          {{if .Error}}
-          <div class="alert alert-danger">{{.Error}}</div>
-          {{end}}
+          {{ if .Error }}
+            <div class="alert alert-danger">{{ .Error }}</div>
+          {{ end }}
           <div class="short-url">
             Short URL:
-            <a href="http://{{.Host}}/r/{{.URL.Key}}" target="_blank"
-              >http://{{.Host}}/r/{{.URL.Key}}</a
+            <a href="http://{{ .Host }}/r/{{ .URL.Key }}" target="_blank"
+              >http://{{ .Host }}/r/{{ .URL.Key }}</a
             >
           </div>
-          <form action="/edit/{{.URL.ID}}" method="POST">
+          <form action="/edit/{{ .URL.ID }}" method="POST">
             <div class="mb-3">
               <label for="url" class="form-label">Original URL</label>
               <input
@@ -39,7 +39,7 @@
                 class="form-control"
                 id="url"
                 name="url"
-                value="{{.URL.URL}}"
+                value="{{ .URL.URL }}"
                 required
               />
             </div>
