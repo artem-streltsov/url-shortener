@@ -610,6 +610,13 @@ func (h *Handler) deleteURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) urlDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := h.store.Get(r, "session")
+	user, ok := session.Values["user"].(*database.User)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
 	urlID, err := strconv.ParseInt(strings.TrimPrefix(r.URL.Path, "/details/"), 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid URL ID", http.StatusBadRequest)
@@ -619,6 +626,11 @@ func (h *Handler) urlDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	url, err := h.db.GetURLByID(urlID)
 	if err != nil {
 		http.Error(w, "URL not found", http.StatusNotFound)
+		return
+	}
+
+	if url.UserID != user.ID {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
 		return
 	}
 
