@@ -117,13 +117,12 @@
                       </div>
                     </td>
                     <td>
-                      <div class="input-group">
-                        <input
-                          type="text"
-                          class="form-control"
-                          value="{{ $.Host }}/r/{{ .Key }}"
-                          readonly
-                        />
+                      <div>
+                        <a
+                          class="pe-2 text-decoration-none"
+                          href="http://{{ $.Host }}/r/{{ .Key }}"
+                          >{{ $.Host }}/r/{{ .Key }}</a
+                        >
                         <button
                           class="btn btn-outline-secondary copy-btn"
                           type="button"
