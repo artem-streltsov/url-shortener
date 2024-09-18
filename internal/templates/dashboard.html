@@ -117,20 +117,18 @@
                       </div>
                     </td>
                     <td>
-                      <div>
-                        <a
-                          class="pe-2 text-decoration-none"
-                          href="http://{{ $.Host }}/r/{{ .Key }}"
-                          >{{ $.Host }}/r/{{ .Key }}</a
-                        >
-                        <button
-                          class="btn btn-outline-secondary copy-btn"
-                          type="button"
-                          data-url="http://{{ $.Host }}/r/{{ .Key }}"
-                        >
-                          <i class="bi bi-clipboard"></i>
-                        </button>
-                      </div>
+                      <a
+                        class="pe-2 text-decoration-none"
+                        href="http://{{ $.Host }}/r/{{ .Key }}"
+                        >{{ $.Host }}/r/{{ .Key }}</a
+                      >
+                      <button
+                        class="btn btn-outline-secondary copy-btn"
+                        type="button"
+                        data-url="http://{{ $.Host }}/r/{{ .Key }}"
+                      >
+                        <i class="bi bi-clipboard"></i>
+                      </button>
                     </td>
                     <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
                     <td>{{ .Clicks }}</td>
