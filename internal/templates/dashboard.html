@@ -112,9 +112,9 @@
                 {{ range .URLs }}
                   <tr>
                     <td>
-                      <div class="text-truncate" style="max-width: 200px">
-                        {{ .URL }}
-                      </div>
+                      <a class="text-decoration-none" href="{{ .URL }}"
+                        >{{ .URL }}</a
+                      >
                     </td>
                     <td>
                       <a
