@@ -10,13 +10,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Deploy to VPS
-      uses: will-lynas/go-vps-deploy@v0.1.0
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-        branch-name: master
+      - name: Deploy to VPS
+        uses: will-lynas/go-vps-deploy@v0.1.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          branch-name: master
