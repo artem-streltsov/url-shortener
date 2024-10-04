@@ -14,9 +14,6 @@
     <div class="row justify-content-center">
       <div class="col-md-6 col-lg-4">
         <h1 class="text-center mb-4">Login</h1>
-        {{ if .Error }}
-          <div class="alert alert-danger">{{ .Error }}</div>
-        {{ end }}
         <form action="/login" method="POST">
           <div class="mb-3">
             <label for="username" class="form-label">Username</label>

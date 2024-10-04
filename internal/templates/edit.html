@@ -22,9 +22,6 @@
     <div class="row justify-content-center">
       <div class="col-lg-8 col-md-10 col-sm-12">
         <h1 class="mb-4">Edit URL</h1>
-        {{ if .Error }}
-          <div class="alert alert-danger">{{ .Error }}</div>
-        {{ end }}
         <div class="short-url">
           Short URL:
           <a href="http://{{ .Host }}/r/{{ .URL.Key }}" target="_blank"
