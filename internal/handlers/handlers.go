@@ -49,14 +49,44 @@ func (h *Handler) Routes() http.Handler {
 	mux.HandleFunc("/delete/", h.deleteURLHandler)
 	mux.HandleFunc("/details/", h.urlDetailsHandler)
 
+	mux.HandleFunc("/404", h.notFoundHandler)
+	mux.HandleFunc("/403", h.forbiddenHandler)
+
 	rl := middleware.NewRateLimiter(100, time.Minute)
 	return middleware.LoggingMiddleware(middleware.RateLimitingMiddleware(rl)(mux))
 }
 
+func (h *Handler) notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotFound)
+	tmpl, err := template.ParseFiles("internal/templates/base.html", "internal/templates/404.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = tmpl.ExecuteTemplate(w, "base.html", nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *Handler) forbiddenHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusForbidden)
+	tmpl, err := template.ParseFiles("internal/templates/base.html", "internal/templates/403.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = tmpl.ExecuteTemplate(w, "base.html", nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (h *Handler) indexHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: create a 404 page, etc
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		h.notFoundHandler(w, r)
 		return
 	}
 
@@ -206,16 +236,15 @@ func (h *Handler) newURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) redirectHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: add flashes
 	key := strings.TrimPrefix(r.URL.Path, "/r/")
 	if key == "" {
-		http.Error(w, "Key is required", http.StatusBadRequest)
+		h.notFoundHandler(w, r)
 		return
 	}
 
 	url, err := h.db.GetURL(key)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		h.notFoundHandler(w, r)
 		return
 	}
 
@@ -253,7 +282,7 @@ func (h *Handler) redirectHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !isSafe {
-		http.Error(w, "The requested URL is not safe", http.StatusForbidden)
+		h.forbiddenHandler(w, r)
 		return
 	}
 
@@ -478,9 +507,7 @@ func (h *Handler) editURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if url.UserID != user.ID {
-		session.AddFlash("Unauthorized access", "error")
-		session.Save(r, w)
-		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+		h.forbiddenHandler(w, r)
 		return
 	}
 
@@ -591,12 +618,12 @@ func (h *Handler) deleteURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	url, err := h.db.GetURLByID(urlID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		h.notFoundHandler(w, r)
 		return
 	}
 
 	if url.UserID != user.ID {
-		http.Error(w, "Unauthorized", http.StatusForbidden)
+		h.forbiddenHandler(w, r)
 		return
 	}
 
@@ -625,12 +652,12 @@ func (h *Handler) urlDetailsHandler(w http.ResponseWriter, r *http.Request) {
 
 	url, err := h.db.GetURLByID(urlID)
 	if err != nil {
-		http.Error(w, "URL not found", http.StatusNotFound)
+		h.notFoundHandler(w, r)
 		return
 	}
 
 	if url.UserID != user.ID {
-		http.Error(w, "Unauthorized", http.StatusForbidden)
+		h.forbiddenHandler(w, r)
 		return
 	}
 
