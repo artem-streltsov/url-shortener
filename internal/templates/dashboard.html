@@ -183,6 +183,9 @@
                 </p>
                 <p class="card-text">Clicks: {{ .Clicks }}</p>
                 <div class="d-flex justify-content-between">
+                  <a href="/details/{{ .ID }}" class="btn btn-sm btn-info"
+                    >Details</a
+                  >
                   <a href="/edit/{{ .ID }}" class="btn btn-primary">Edit</a>
                   <a
                     href="/delete/{{ .ID }}"
