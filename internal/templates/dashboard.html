@@ -137,7 +137,9 @@
                     <td>{{ .Clicks }}</td>
                     <td>
                       <div class="btn-group" role="group">
-                        <a href="/details/{{ .ID }}" class="btn btn-sm btn-info"
+                        <a
+                          href="/details/{{ .ID }}"
+                          class="btn btn-sm btn-info text-white"
                           >Details</a
                         >
                         <a href="/edit/{{ .ID }}" class="btn btn-sm btn-primary"
@@ -183,7 +185,7 @@
                 </p>
                 <p class="card-text">Clicks: {{ .Clicks }}</p>
                 <div class="d-flex justify-content-between">
-                  <a href="/details/{{ .ID }}" class="btn btn-sm btn-info"
+                  <a href="/details/{{ .ID }}" class="btn btn-info text-white"
                     >Details</a
                   >
                   <a href="/edit/{{ .ID }}" class="btn btn-primary">Edit</a>
