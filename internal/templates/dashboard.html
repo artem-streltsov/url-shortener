@@ -117,11 +117,6 @@
                       >
                     </td>
                     <td>
-                      <a
-                        class="pe-2 text-decoration-none"
-                        href="http://{{ $.Host }}/r/{{ .Key }}"
-                        >{{ $.Host }}/r/{{ .Key }}</a
-                      >
                       <button
                         class="btn btn-outline-secondary copy-btn"
                         type="button"
@@ -129,6 +124,11 @@
                       >
                         <i class="bi bi-clipboard"></i>
                       </button>
+                      <a
+                        class="pe-2 text-decoration-none"
+                        href="http://{{ $.Host }}/r/{{ .Key }}"
+                        >{{ $.Host }}/r/{{ .Key }}</a
+                      >
                     </td>
                     <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
                     <td>{{ .Clicks }}</td>
